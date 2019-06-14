@@ -27,12 +27,6 @@ io.on('connection', function(socket) {
   io.sockets.emit('broadcast', { clientsCount: clients + ' connected' });
   socket.on('clientEvent', function(data) {});
 
-  //broadcast on disconnection
-  socket.on('disconnect', function() {
-    clients--;
-    io.sockets.emit('broadcast', { clientsCount: clients + ' disconnected' });
-  });
-
   // To implement room, allow max of 2 members in the room
   if (
     io.nsps['/'].adapter.rooms['room-' + roomno] &&
@@ -75,10 +69,13 @@ io.on('connection', function(socket) {
     io.sockets.emit('user-typing-stopped', data);
   });
 
-  // Remove user from chat list if browser tab is closed
+  // Remove user from chat list if browser tab is closed on disconnect
   socket.on('disconnect', function(data) {
-    io.sockets.emit('user-left', socket.user);
-    delete users[socket.user];
+    if (data) {
+      clients--;
+      io.sockets.emit('user-left', socket.user);
+      delete users[socket.user];
+    }
   });
 });
 

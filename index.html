@@ -32,6 +32,18 @@
         bottom: 10px;
         animation: marq 20s linear infinite;
       }
+      button {
+        background-color: blue;
+        border: none;
+        color: white;
+        width: 80px;
+        height: 36px;
+      }
+      input {
+        height: 30px;
+        width: 250px;
+        font-size: 16px;
+      }
     </style>
   </head>
   <script src="/socket.io/socket.io.js"></script>
@@ -57,7 +69,7 @@
       user = data.username;
       document.body.innerHTML =
         '<div class="chats">\
-         <input type = "text" id = "message" onkeypress="typingFunc()">\
+         <input type = "text" id = "message" onkeypress="typingFunc(event)">\
          <button type = "button" name = "button" onclick = "sendMessage()">Send</button>\
          <div id="left-conversation"></div>\
          <div id="typing-msg"></div>\
@@ -92,8 +104,10 @@
     });
 
     socket.on('user-left', function(data) {
-      document.querySelector('#left-conversation').innerText =
-        data + ' has left the conversation';
+      if (data) {
+        document.querySelector('#left-conversation').innerText =
+          data + ' has left the conversation';
+      }
     });
 
     function setUsername() {
@@ -105,11 +119,15 @@
       var msg = document.getElementById('message').value;
       if (msg) {
         socket.emit('msg', { message: msg, user: user });
+        document.getElementById('message').value = '';
       }
     }
 
-    function typingFunc() {
+    function typingFunc(e) {
       if (typing == false) {
+        if (e.keyCode === 13) {
+          sendMessage();
+        }
         typing = true;
         socket.emit('typing', { user: user, typing: typing });
         time = setTimeout(typingstopped, 1000);
@@ -122,6 +140,17 @@
     function typingstopped() {
       typing = false;
       socket.emit('notTyping', { user: user, typing: typing });
+    }
+
+    function onEnterClick(e, string) {
+      console.log(e, string);
+      if (e.keyCode === 13) {
+        if (string === 'fromUser') {
+          setUsername();
+        } else {
+          sendMessage();
+        }
+      }
     }
   </script>
   <body>
@@ -138,9 +167,10 @@
         name="name"
         value=""
         placeholder="Enter your name!"
+        onkeypress="onEnterClick(event, 'fromUser')"
       />
       <button type="button" name="button" onclick="setUsername()">
-        Send
+        Allow
       </button>
       <span class="chat-marquee">
         “A conscious human is driven by their conscience, not popular opinion.”
