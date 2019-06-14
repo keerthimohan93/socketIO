@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      @keyframes marq {
+        0% {
+          transform: translateX(100%);
+        }
+        100% {
+          transform: translateX(-100%);
+        }
+      }
+      .socket-app,
+      .chats {
+        text-align: center;
+      }
+      .welcome-msg {
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .broadcast-msg,
+      .conversation {
+        font-weight: bold;
+      }
+      .error-container {
+        color: firebrick;
+        padding-bottom: 10px;
+      }
+      .chat-marquee {
+        position: fixed;
+        bottom: 10px;
+        animation: marq 20s linear infinite;
+      }
+    </style>
+  </head>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io();
+    var typing = false;
+
+    socket.on('test', function(data) {
+      document.querySelector('#app').innerText = data.desc;
+    });
+    socket.on('new-connection', function(data) {
+      document.querySelector('.welcome-msg').innerText = data.text;
+    });
+    socket.on('connectToRoom', function(data) {
+      document.querySelector('.room').innerText = data;
+    });
+    socket.emit('clientEvent', 'Sent an event from the client!');
+    socket.on('broadcast', function(data) {
+      document.querySelector('.broadcast-msg').innerText = data.clientsCount;
+    });
+
+    socket.on('userSet', function(data) {
+      user = data.username;
+      document.body.innerHTML =
+        '<div class="chats">\
+         <input type = "text" id = "message" onkeypress="typingFunc()">\
+         <button type = "button" name = "button" onclick = "sendMessage()">Send</button>\
+         <div id="left-conversation"></div>\
+         <div id="typing-msg"></div>\
+         <div class="conversation">Conversations:</div>\
+         <div id = "message-container"></div>\
+         </div>';
+    });
+
+    socket.on('userExists', function(data) {
+      document.querySelector('.error-container').innerText = data;
+    });
+
+    socket.on('newmsg', function(data) {
+      if (user) {
+        document.getElementById('message-container').innerHTML +=
+          '<div><b>' + data.user + '</b>: ' + data.message + '</div>';
+      }
+    });
+
+    socket.on('user-typing', function(data) {
+      if (user && typing) {
+        document.querySelector('#typing-msg').style.display = 'block';
+        document.querySelector('#typing-msg').innerText =
+          data.user + ' ' + 'is typing';
+      }
+    });
+
+    socket.on('user-typing-stopped', function(data) {
+      if (user && !typing) {
+        document.querySelector('#typing-msg').style.display = 'none';
+      }
+    });
+
+    socket.on('user-left', function(data) {
+      document.querySelector('#left-conversation').innerText =
+        data + ' has left the conversation';
+    });
+
+    function setUsername() {
+      socket.emit('setUsername', document.getElementById('name').value);
+      document.getElementById('name').value = '';
+    }
+
+    function sendMessage() {
+      var msg = document.getElementById('message').value;
+      if (msg) {
+        socket.emit('msg', { message: msg, user: user });
+      }
+    }
+
+    function typingFunc() {
+      if (typing == false) {
+        typing = true;
+        socket.emit('typing', { user: user, typing: typing });
+        time = setTimeout(typingstopped, 1000);
+      } else {
+        clearTimeout(time);
+        time = setTimeout(typingstopped, 1000);
+      }
+    }
+
+    function typingstopped() {
+      typing = false;
+      socket.emit('notTyping', { user: user, typing: typing });
+    }
+  </script>
+  <body>
+    <div class="socket-app">
+      <h2 id="app"></h2>
+      <p class="welcome-msg"></p>
+      <p class="broadcast-msg"></p>
+      <p class="namespace"></p>
+      <p class="room"></p>
+      <div class="error-container"></div>
+      <input
+        id="name"
+        type="text"
+        name="name"
+        value=""
+        placeholder="Enter your name!"
+      />
+      <button type="button" name="button" onclick="setUsername()">
+        Send
+      </button>
+      <span class="chat-marquee">
+        “A conscious human is driven by their conscience, not popular opinion.”
+      </span>
+    </div>
+  </body>
+</html>
