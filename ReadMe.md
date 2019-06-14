@@ -19,4 +19,4 @@ Steps for installing the application:
 
 You will see the application running on localhost:3000
 
-Note: You can open multiple instances and checkout the chat application.
+Note:You can open multiple instances of localhost:3000 and checkout the chat application.
